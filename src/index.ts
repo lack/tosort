@@ -41,35 +41,35 @@ async function gatherTodos(folder: Folder): Promise<Todo[]> {
 }
 
 function toDiv(todo: Todo): string {
+  const bottomButtonAction = todo.order > 0 ? "bottom" : "append";
   let result = `
   <div class="todo" id="${todo.id}">
-  ☐ ${todo.title}
-  <br />
-  <button type="button"
-    data-id="${todo.id}"
-    data-action="top">☶</button>`
+  <div class="title">☐ ${todo.title}</div>
+  <div class="coarsebuttons">
+    <button type="button"
+      data-id="${todo.id}"
+      data-action="top">☶</button>
+    <button type="button"
+      data-id="${todo.id}"
+      data-action="middle">☵</button>
+    <button type="button"
+      data-id="${todo.id}"
+      data-action="${bottomButtonAction}">☳</button>
+  </div>`
   if (todo.order > 0) {
     result += `
-  <button type="button"
-    data-id="${todo.id}"
-    data-action="up">𝌥</button>
-  <button type="button"
-    data-id="${todo.id}"
-    data-action="middle">☵</button>
-  <button type="button"
-    data-id="${todo.id}"
-    data-action="down">𝌫</button>
-  <button type="button"
-    data-id="${todo.id}"
-    data-action="bottom">☳</button>`
+  <div class="finebuttons">
+    <button type="button"
+      data-id="${todo.id}"
+      data-action="up">⤴</button>
+    <br />
+    <button type="button"
+      data-id="${todo.id}"
+      data-action="down">⤵</button>
+  </div>`
   } else {
     result += `
-  <button type="button"
-    data-id="${todo.id}"
-    data-action="middle">☵</button>
-  <button type="button"
-    data-id="${todo.id}"
-    data-action="append">☳</button>`
+  <div class="finebuttons"></div>`
   }
   result += `
   </div>
@@ -81,22 +81,41 @@ async function refreshWebview(sorter: Sorter) {
   const prioritized = sorter.todos.filter((todo: Todo) => todo.order > 0).map(toDiv)
   const unprioritized = sorter.todos.filter((todo: Todo) => todo.order == 0).map(toDiv)
   let html = `
-    <h1>${sorter.folder.title}</h1>
-    <h2>Prioritized</h2>
-    ${prioritized.join('\n')}`
+    <h1>${sorter.folder.title}</h1>`
   if (unprioritized.length > 0) {
     html += `
+    <h2>Prioritized</h2>
+    ${prioritized.join('\n')}
     <h2>Unprioritized</h2>
     ${unprioritized.join('\n')}
+    `
+  } else {
+    html += `
+    ${prioritized.join('\n')}
     `
   }
   await joplin.views.panels.setHtml(sorter.panel, html);
 }
 
-async function updateFolderView(sorter: Sorter) {
-  const folder = await joplin.workspace.selectedFolder();
-  if (folder.id === sorter.folder.id) {
-    return
+async function checkForFolderChange(sorter: Sorter) {
+  try {
+    const folder = await joplin.workspace.selectedFolder();
+    if (folder.id != sorter.folder.id) {
+      await updateFolderView(sorter, folder)
+    }
+  } catch (error) {
+    console.error("Could not update ToSort panel:", error);
+  } finally {
+    // Re-check every 1s because there is no "onFolderChange" signal in the plugin API:
+    setTimeout(async () => {
+      checkForFolderChange(sorter)
+    }, 1000);
+  }
+}
+
+async function updateFolderView(sorter: Sorter, folder?: Folder) {
+  if (folder == null) {
+    folder = await joplin.workspace.selectedFolder();
   }
   sorter.folder = folder
 
@@ -255,14 +274,21 @@ joplin.plugins.register({
       panel: panel,
     }
 
-    await updateFolderView(sorter);
-
+    // Event processing
     await joplin.workspace.onNoteSelectionChange(() => {
+      // Note selection change *may* signal a folder change, or note addition, so refresh
+      updateFolderView(sorter);
+    })
+    await joplin.workspace.onSyncComplete(() => {
+      // Sync may change ordering, so always refresh
       updateFolderView(sorter);
     })
 
     await joplin.views.panels.onMessage(panel, (message: any) => {
       moveTodo(sorter, message.data.id, message.data.action)
     })
+
+    // Setup the initial view
+    await checkForFolderChange(sorter)
   },
 });

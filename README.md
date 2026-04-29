@@ -27,8 +27,8 @@ But for now, at least the basics work (most of the time):
   4. Each to-do shows its title and some buttons to change its position in the list.
   5. Clicking the buttons moves the to-do to:
      - ☶ Top of list
-     - 𝌥 Up by one
      - ☵ Middle of list
-     - 𝌫 Down by one
      - ☳ Bottom of list
+     - ⤴ Up by one
+     - ⤵ Down by one
   6. The change is immediately shown in the note list (if you have selected custom sorting) and is synced to other clients (like desktop)
