@@ -80,13 +80,17 @@ function toDiv(todo: Todo): string {
 async function refreshWebview(sorter: Sorter) {
   const prioritized = sorter.todos.filter((todo: Todo) => todo.order > 0).map(toDiv)
   const unprioritized = sorter.todos.filter((todo: Todo) => todo.order == 0).map(toDiv)
-  await joplin.views.panels.setHtml(sorter.panel, `
+  let html = `
     <h1>${sorter.folder.title}</h1>
-    <h2>Prioritized:</h2>
-    ${prioritized.join('\n')}
-    <h2>Unprioritized:</h2>
+    <h2>Prioritized</h2>
+    ${prioritized.join('\n')}`
+  if (unprioritized.length > 0) {
+    html += `
+    <h2>Unprioritized</h2>
     ${unprioritized.join('\n')}
-  `);
+    `
+  }
+  await joplin.views.panels.setHtml(sorter.panel, html);
 }
 
 async function updateFolderView(sorter: Sorter) {
@@ -97,11 +101,11 @@ async function updateFolderView(sorter: Sorter) {
   sorter.folder = folder
 
   await joplin.views.panels.setHtml(sorter.panel, `
-    <h1>${folder.title}</h1>
-    Fetching notes...
-  `);
+    <h1>${sorter.folder.title}</h1>
+    <div class="loading">Fetching notes...</div>
+    `);
   sorter.todos = await gatherTodos(folder);
-  refreshWebview(sorter);
+  await refreshWebview(sorter);
 }
 
 interface Ordering {
@@ -240,7 +244,7 @@ joplin.plugins.register({
     const panel = await joplin.views.panels.create('panel_1');
     await joplin.views.panels.addScript(panel, './webview.css');
     await joplin.views.panels.addScript(panel, './webview.js');
-    await joplin.views.panels.setHtml(panel, 'Loading...');
+    await joplin.views.panels.setHtml(panel, '<div class="loading">Loading...</div>');
 
     const sorter = {
       folder: {

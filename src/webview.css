@@ -4,3 +4,7 @@ div.todo {
   padding: 5px;
   margin: 5px;
 }
+
+div.loading {
+  font-style: italics;
+}
