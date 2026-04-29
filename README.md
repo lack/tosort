@@ -4,6 +4,8 @@ In Joplin's mobile client, there is no way to sort your notes when using custom 
 
 This plugin adds a panel to the UI which (though ugly) allows you to do this.
 
+<p align="center"><img src="screenshot.png" alt="screenshot" width=300 /></p>
+
 ## Caveat
 
 This plugin is in its early stages of development, so it definitely has some rough edges:
