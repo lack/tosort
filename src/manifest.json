@@ -7,7 +7,7 @@
   ],
   "version": "0.1.0",
   "name": "ToSort",
-  "description": "Sort todos in Joplin Mobile",
+  "description": "Adds a panel to sort to-dos in Joplin Mobile",
   "author": "Jim Ramsay",
   "homepage_url": "https://github.com/lack/tosort",
   "repository_url": "https://github.com/lack/tosort",
